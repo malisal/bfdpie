@@ -4,4 +4,6 @@
 bfdpie.egg-info
 build/
 dist/
+tmp/
+binutils.tar.bz2
 MANIFEST

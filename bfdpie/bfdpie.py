@@ -108,7 +108,10 @@ ARCH_SH4EB = Arch(name="SH4EB", bfd_name="sh4", bits=32, little_endian=0)
 
 ARCH_SPARC = Arch(name="SPARC", bfd_name="sparc", bits=32, little_endian=0)
 ARCH_SPARC64 = Arch(name="SPARC64", bfd_name="sparc", bits=32, little_endian=0)
-   
+
+ARCH_MICROBLAZE = Arch(name="MICROBLAZE", bfd_name="MicroBlaze", bits=32, little_endian=0)
+ARCH_MICROBLAZEEL = Arch(name="MICROBLAZEEL", bfd_name="MicroBlaze", bits=32, little_endian=1)
+
 archs = [
    ARCH_I686,
    ARCH_X86_64,
@@ -131,6 +134,8 @@ archs = [
    ARCH_ALPHA,
    ARCH_CRISV32,
    ARCH_S390X,
+   ARCH_MICROBLAZE,
+   ARCH_MICROBLAZEEL,
 ]
 
 class Symbol():

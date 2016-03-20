@@ -44,7 +44,7 @@ tar xvf binutils.tar.bz2 -C ${BUILD_DIR} --strip-components=1
 cd ${BUILD_DIR}
 
 # Don't build ld since there is no binutils support for mach-o linking
-ARCHS="i686-linux,alphaev4-linux,sparc-linux,mipsel-linux,mips64el-linux,sparc64-linux,sh4-linux,aarch64-linux,arm-linux,mips64-linux,s390x-linux,powerpc64-linux,armeb-linux,mips-linux,powerpc-linux,x86_64-linux,crisv32-linux,i686-w64-mingw32,x86_64-w64-mingw32,x86_64-apple-darwin,i686-apple-darwin"
+ARCHS="i686-linux,alphaev4-linux,sparc-linux,mipsel-linux,mips64el-linux,sparc64-linux,sh4-linux,aarch64-linux,arm-linux,mips64-linux,s390x-linux,powerpc64-linux,armeb-linux,mips-linux,powerpc-linux,x86_64-linux,crisv32-linux,i686-w64-mingw32,x86_64-w64-mingw32,x86_64-apple-darwin,i686-apple-darwin,microblaze-linux,microblazeel-linux"
 
 CFLAGS="$C_FLAGS -Wno-error=unused-value" ./configure --program-prefix=$PREFIX --enable-targets=${ARCHS} --prefix=$INSTALL_DIR --disable-ld --disable-nls --disable-werror
 

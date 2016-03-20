@@ -402,6 +402,46 @@ class Test(unittest.TestCase):
       self.assertTrue(str(dis[2]) == "br %r4")
       self.assertTrue(str(dis[3]) == "nopr %r7")
 
+   def test_arch_microblaze(self):
+      #  10000628:	3021ffe0 	addik	r1, r1, -32
+      #  1000062c:	fa81001c 	swi	r20, r1, 28
+      #  10000630:	f9e10000 	swi	r15, r1, 0
+      #  10000634:	96808000 	mfs	r20, rpc
+
+      b = Binary()
+      dis = b.disassemble(
+         b"\x30\x21\xff\xe0" +
+         b"\xfa\x81\x00\x1c" +
+         b"\xf9\xe1\x00\x00" +
+         b"\x96\x80\x80\x00",
+         ARCH_MICROBLAZE
+      )
+
+      self.assertTrue(str(dis[0]) == "addik r1, r1, -32")
+      self.assertTrue(str(dis[1]) == "swi r20, r1, 28")
+      self.assertTrue(str(dis[2]) == "swi r15, r1, 0")
+      self.assertTrue(str(dis[3]) == "mfs r20, rpc")
+
+   def test_arch_microblazeel(self):
+      #  10000628:	e03021ff 	addik	r1, r1, -32
+      #  1000062c:	1cfa8100 	swi	r20, r1, 28
+      #  10000630:	00f9e100 	swi	r15, r1, 0
+      #  10000634:	00968080 	mfs	r20, rpc
+
+      b = Binary()
+      dis = b.disassemble(
+         b"\xe0\xff\x21\x30" +
+         b"\x1c\x00\x81\xfa" +
+         b"\x00\x00\xe1\xf9" +
+         b"\x00\x80\x80\x96",
+         ARCH_MICROBLAZEEL
+      )
+
+      self.assertTrue(str(dis[0]) == "addik r1, r1, -32")
+      self.assertTrue(str(dis[1]) == "swi r20, r1, 28")
+      self.assertTrue(str(dis[2]) == "swi r15, r1, 0")
+      self.assertTrue(str(dis[3]) == "mfs r20, rpc")
+
    def test_loading(self):   
       b = Binary()
       

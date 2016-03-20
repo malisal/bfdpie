@@ -84,6 +84,8 @@ archs = [
    ARCH_ALPHA,
    ARCH_CRISV32,
    ARCH_S390X,
+   ARCH_MICROBLAZE,
+   ARCH_MICROBLAZEEL,
 ]
 ```
 

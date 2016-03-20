@@ -49,6 +49,8 @@ static arch_t archs[] = {
    {"alpha:ev4",        "",               BFD_ENDIAN_BIG},
    {"crisv32",          "",               BFD_ENDIAN_BIG},
    {"s390:64-bit",      "zarch",          BFD_ENDIAN_BIG},
+   {"MicroBlaze",       "",               BFD_ENDIAN_BIG},
+   {"MicroBlaze",       "",               BFD_ENDIAN_LITTLE},
 };
 
 int get_relocs(bfd *abfd, PyObject **py_symbol_list)

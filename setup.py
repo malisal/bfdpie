@@ -4,7 +4,6 @@ import distutils
 from setuptools import setup, Extension, Command
 from distutils.command import build as build_module
 from distutils.command.install import install
-from wheel.bdist_wheel import bdist_wheel
 
 BINUTILS_VERSION = "binutils-2.26"
 
@@ -51,6 +50,10 @@ setup(
    ext_modules = [module],
 
    test_suite = "tests",
+
+   install_requires = [
+      "wheel>=0.29.0",
+   ],
 
    package_data = {
       "bfdpie" : ["bin/dummy.elf"],
