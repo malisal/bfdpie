@@ -1,0 +1,3 @@
+include requirements.txt                                                        
+include bfdpie_build.sh
+include bin/dummy.elf
