@@ -1,6 +1,7 @@
 *.pyc
 *.swp
 *.swo
+bfdpie.egg-info
 build/
 dist/
 MANIFEST
