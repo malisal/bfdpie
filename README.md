@@ -6,10 +6,13 @@
 Bfdpie is a tiny wrapper library around [binutils](https://www.gnu.org/software/binutils/) (more precisely, `libbfd`). The project draws code and concepts from [pybfd](https://github.com/Groundworkstech/pybfd).
 
 ### Installing
-To install `bfdpie`, use
+
+Any setup that can successfully compile `binutils` as well as python modules should be able to install `bfdpie`. To install `bfdpie`, use
 ```bash
 pip install bfdpie
 ```
+
+The code was tested on Linux, OSX and Windows (cygwin). On Windows, the prerequisites in cygwin were `make`, `zlib-devel`, `make`, and `difftools`.
 
 ### Description
 

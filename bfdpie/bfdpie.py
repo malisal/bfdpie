@@ -2,10 +2,9 @@
 
 import os
 import re
+from . import _bfdpie as _bfd
 
 PATH = os.path.dirname(os.path.realpath(__file__))
-
-from . import _bfdpie as _bfd
 
 # libbfd flavours
 #
