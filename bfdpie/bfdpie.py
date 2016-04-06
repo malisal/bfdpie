@@ -356,7 +356,8 @@ class Binary():
    def objcopy(self):
       ret = ""
 
-      for s in self.sections.itervalues():
+      # Sort the sections by VMA, in asscending order
+      for s in sorted(self.sections.itervalues(), key=lambda x:x.vma):
          if s.flags & SEC_LOAD:
             ret += s.contents
 
