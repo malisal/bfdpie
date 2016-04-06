@@ -6,6 +6,16 @@ from . import _bfdpie as _bfd
 
 PATH = os.path.dirname(os.path.realpath(__file__))
 
+# libbfd section flags
+SEC_NO_FLAGS   = 0x000
+SEC_ALLOC      = 0x001 # Tells the OS to allocate space for this section when loading. This is clear for a section containing debug information only.
+SEC_LOAD       = 0x002 # Tells the OS to load the section from the file when loading. This is clear for a .bss section.
+SEC_RELOC      = 0x004 # The section contains data still to be relocated, so there is some relocation information too.
+SEC_READONLY   = 0x008 # A signal to the OS that the section contains read only data.
+SEC_CODE       = 0x010 # The section contains code only.
+SEC_DATA       = 0x020 # The section contains data only.
+SEC_ROM        = 0x040 # The section will reside in ROM.
+
 # libbfd flavours
 #
 #enum bfd_flavour
@@ -75,6 +85,9 @@ class Arch():
 
    def __eq__(self, other):
       return self.name == other.name and self.bits == other.bits and self.little_endian == other.little_endian
+
+   def __hash__(self):
+      return hash((self.name, self.bits, self.little_endian))
 
 ARCH_I686 = Arch(name="I686", bfd_name="i386", bits=32, little_endian=1)
 ARCH_X86_64 = Arch(name="X86_64", bfd_name="i386", bits=64, little_endian=1)
@@ -339,6 +352,15 @@ class Binary():
    def disassemble_simple(self, data, arch=None, vma=0):
       for i in self.disassemble(data, arch, vma):
          print(i)
+
+   def objcopy(self):
+      ret = ""
+
+      for s in self.sections.itervalues():
+         if s.flags & SEC_LOAD:
+            ret += s.contents
+
+      return ret
 
    def __repr__(self):
       return "Binary<'%s', '%s', %s>" % (self.fname, self.file_type, self.arch)
