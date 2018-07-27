@@ -2,6 +2,12 @@ import unittest
 from bfdpie import *
 
 class Test(unittest.TestCase):
+   def test_large_vma(self):
+      b = Binary()
+
+      b.disassemble(b"\x90", ARCH_I686, 0x80000000)
+      b.disassemble(b"\x90", ARCH_X86_64, 0x80000000)
+
    def test_arch_i686(self):
       # 8048579:   89 e5                   mov    %esp,%ebp
       # 804857b:   53                      push   %ebx

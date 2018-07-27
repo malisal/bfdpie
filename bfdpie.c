@@ -813,7 +813,7 @@ static PyObject *pybfd_disassemble_bytes(PyObject *self, PyObject *args)
    int data_len;
    size_t vma;
 
-   if(PyArg_ParseTuple(args, "nis#i", &abfd, &arch_num, &data, &data_len, &vma))
+   if(PyArg_ParseTuple(args, "nis#n", &abfd, &arch_num, &data, &data_len, &vma))
    {
       // Validate the BFD pointer passes.
       if(!abfd)
