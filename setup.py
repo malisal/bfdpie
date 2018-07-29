@@ -28,7 +28,7 @@ class BuildCommand(distutils.command.build.build):
 
 setup(
    name = "bfdpie",
-   version = "0.1.13",
+   version = "0.1.14",
    description = "A tiny interface around a subset of libBFD. Code based on https://github.com/Groundworkstech/pybfd",
    author = "Luka Malisa",
    author_email = "luka.malisha@gmail.com",

@@ -7,45 +7,17 @@ from . import _bfdpie as _bfd
 PATH = os.path.dirname(os.path.realpath(__file__))
 
 # libbfd section flags
-SEC_NO_FLAGS   = 0x000
-SEC_ALLOC      = 0x001 # Tells the OS to allocate space for this section when loading. This is clear for a section containing debug information only.
-SEC_LOAD       = 0x002 # Tells the OS to load the section from the file when loading. This is clear for a .bss section.
-SEC_RELOC      = 0x004 # The section contains data still to be relocated, so there is some relocation information too.
-SEC_READONLY   = 0x008 # A signal to the OS that the section contains read only data.
-SEC_CODE       = 0x010 # The section contains code only.
-SEC_DATA       = 0x020 # The section contains data only.
-SEC_ROM        = 0x040 # The section will reside in ROM.
+SEC_NO_FLAGS      = 0x000
+SEC_ALLOC         = 0x001 # Tells the OS to allocate space for this section when loading. This is clear for a section containing debug information only.
+SEC_LOAD          = 0x002 # Tells the OS to load the section from the file when loading. This is clear for a .bss section.
+SEC_RELOC         = 0x004 # The section contains data still to be relocated, so there is some relocation information too.
+SEC_READONLY      = 0x008 # A signal to the OS that the section contains read only data.
+SEC_CODE          = 0x010 # The section contains code only.
+SEC_DATA          = 0x020 # The section contains data only.
+SEC_ROM           = 0x040 # The section will reside in ROM.
+SEC_HAS_CONTENTS  = 0x100 # The section has contents
 
 # libbfd flavours
-#
-#enum bfd_flavour
-#{
-#  bfd_target_unknown_flavour    = 0
-#  bfd_target_aout_flavour       = 1
-#  bfd_target_coff_flavour       = 2
-#  bfd_target_ecoff_flavour      = 3
-#  bfd_target_xcoff_flavour      = 4
-#  bfd_target_elf_flavour        = 5
-#  bfd_target_ieee_flavour       = 6
-#  bfd_target_nlm_flavour        = 7
-#  bfd_target_oasys_flavour      = 8
-#  bfd_target_tekhex_flavour     = 9
-#  bfd_target_srec_flavour       = 10
-#  bfd_target_verilog_flavour    = 11
-#  bfd_target_ihex_flavour       = 12
-#  bfd_target_som_flavour        = 13
-#  bfd_target_os9k_flavour       = 14
-#  bfd_target_versados_flavour   = 15
-#  bfd_target_msdos_flavour      = 16
-#  bfd_target_ovax_flavour       = 17
-#  bfd_target_evax_flavour       = 18
-#  bfd_target_mmo_flavour        = 19
-#  bfd_target_mach_o_flavour     = 20
-#  bfd_target_pef_flavour        = 21
-#  bfd_target_pef_xlib_flavour   = 21
-#  bfd_target_sym_flavour        = 22
-#}
-
 file_types = [
    "unknown",
    "aout",
@@ -113,10 +85,10 @@ ARCH_MIPS64 = Arch(name="MIPS64", bfd_name="mips", bits=64, little_endian=0)
 ARCH_PPC32 = Arch(name="PPC32", bfd_name="powerpc", bits=32, little_endian=0)
 ARCH_PPC64 = Arch(name="PPC64", bfd_name="powerpc", bits=64, little_endian=0)
 
-ARCH_S390X = Arch(name="S390X", bfd_name="s390x", bits=64, little_endian=1)
+ARCH_S390X = Arch(name="S390X", bfd_name="s390", bits=64, little_endian=0)
 
-ARCH_SH4 = Arch(name="SH4", bfd_name="sh4", bits=32, little_endian=1)
-ARCH_SH4EB = Arch(name="SH4EB", bfd_name="sh4", bits=32, little_endian=0)
+ARCH_SH4 = Arch(name="SH4", bfd_name="sh", bits=32, little_endian=1)
+ARCH_SH4EB = Arch(name="SH4EB", bfd_name="sh", bits=32, little_endian=0)
 
 ARCH_SPARC = Arch(name="SPARC", bfd_name="sparc", bits=32, little_endian=0)
 ARCH_SPARC64 = Arch(name="SPARC64", bfd_name="sparc", bits=32, little_endian=0)
@@ -261,18 +233,18 @@ class Binary():
 
       # Convert BFD architecture designators to our own
       for arch in archs:
-         if arch_name == arch.bfd_name and arch_little_endian == arch.little_endian and arch_bits == arch.bits:
+         if arch_name.upper() == arch.bfd_name.upper() and arch_little_endian == arch.little_endian and arch_bits == arch.bits:
             # We found a match
             self.arch = arch
- 
+
+      if not self.arch:
+         raise BinaryError("Unsupported architecture: %s" % (arch_name))
+
       # Resolve the type of file
       try:
          self.file_type = file_types[arch_flavour]
       except:
          raise BinaryError("Unknown flavor: " + arch_flavour)
-
-      if not self.arch:
-         raise BinaryError("Unsupported architecture: %s" % (arch_name))
 
    def _openr(self):
       self._ptr = _bfd.openr(self.fname)
@@ -353,24 +325,30 @@ class Binary():
       for i in self.disassemble(data, arch, vma):
          print(i)
 
-   def objcopy(self):
+   def objcopy(self, ignore=[]):
       ret = ""
+      secs = []
 
-      # Sort the sections by VMA, in asscending order
-      for s in sorted(self.sections.itervalues(), key=lambda x:x.vma):
-         if s.flags & SEC_LOAD:
-            ret += s.contents
+      # Sort the sections by LMA, in asscending order and filter
+      for sec in sorted(self.sections.itervalues(), key=lambda x:x.lma):
+        # Remove sections that shouldn't be loaded
+        if sec.flags & SEC_LOAD and sec.flags & SEC_HAS_CONTENTS and sec.name not in ignore:
+           secs.append(sec)
+         
+      for x in range(len(secs) - 1):
+         gap_start = secs[x].lma + secs[x].size
+         gap_stop = secs[x+1].lma
 
+         # Pad the sections. Based on code from binutils/objcopy.c
+         ret += secs[x].contents.ljust(secs[x].size + (gap_stop - gap_start), "\x00")
+
+      # We don't pad the last section, so we just copy it over
+      if secs[-1].flags & SEC_LOAD and secs[-1].flags & SEC_HAS_CONTENTS and secs[-1].name not in ignore:
+         ret += secs[-1].contents
+
+      # We don't need trailing zeroes
       return ret
 
    def __repr__(self):
       return "Binary<'%s', '%s', %s>" % (self.fname, self.file_type, self.arch)
-
-if __name__ == '__main__':
-   b = Binary("/bin/ls")
-
-   print(b)
-   print(b.symbols["_fputs"])
-
-   b.disassemble_simple(10*"\x44\x00\x00", ARCH_X86_64)
 
