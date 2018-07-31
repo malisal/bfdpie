@@ -5,8 +5,19 @@ class Test(unittest.TestCase):
    def test_large_vma(self):
       b = Binary()
 
-      b.disassemble(b"\x90", ARCH_I686, 0x80000000)
-      b.disassemble(b"\x90", ARCH_X86_64, 0x80000000)
+      # 32-bit limit test
+      dis1 = b.disassemble(b"\x90", ARCH_I686, 0x80000000)
+      dis2 = b.disassemble(b"\x90", ARCH_X86_64, 0x80000000)
+
+      self.assertTrue(dis1[0].vma >= 0)
+      self.assertTrue(dis2[0].vma >= 0)
+
+      # 64-bit limit test
+      dis3 = b.disassemble(b"\x90", ARCH_I686, 0x8000000000000000)
+      dis4 = b.disassemble(b"\x90", ARCH_X86_64, 0x8000000000000000)
+
+      self.assertTrue(dis3[0].vma >= 0)
+      self.assertTrue(dis4[0].vma >= 0)
 
    def test_arch_i686(self):
       # 8048579:   89 e5                   mov    %esp,%ebp
