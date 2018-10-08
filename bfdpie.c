@@ -53,16 +53,16 @@ static arch_t archs[] = {
    {"MicroBlaze",       "",               BFD_ENDIAN_LITTLE},
 };
 
-int get_relocs(bfd *abfd, PyObject **py_symbol_list)
+long get_relocs(bfd *abfd, PyObject **py_symbol_list)
 {
-   int x;
+   long x;
 
-   int storage_relocs;
+   long storage_relocs;
 
    asymbol **symbol_table = NULL;
    arelent **reloc_table = NULL;
 
-   int num_syms_reloc;
+   long num_syms_reloc;
 
    // Return value list
    if (!(*py_symbol_list = PyList_New(0)))
@@ -89,21 +89,27 @@ int get_relocs(bfd *abfd, PyObject **py_symbol_list)
       // Release unused symbol table and return.
       if(symbol_table)
          free(symbol_table);
+      if(reloc_table)
+         free(reloc_table);
 
       return -1;
    }
 
-   DEBUG("RELOCS %d\n", num_syms_reloc);
+   DEBUG("RELOCS %ld\n", num_syms_reloc);
 
    for(x = 0; x < num_syms_reloc; x++) 
    {
       arelent *q = reloc_table[x];
 
-      DEBUG("RELOC. %d, %s @ 0x%x\n", x, (*(q->sym_ptr_ptr))->name, q->address);
+      DEBUG("RELOC. %ld, %s @ 0x%x\n", x, (*(q->sym_ptr_ptr))->name, q->address);
 
       PyList_Append(*py_symbol_list,
          Py_BuildValue(
+#ifdef BFD64
+            "(IsKI)",
+#else
             "(IskI)",
+#endif
             (*(q->sym_ptr_ptr))->section->index,
             (*(q->sym_ptr_ptr))->name,
             q->address,
@@ -123,14 +129,35 @@ int get_relocs(bfd *abfd, PyObject **py_symbol_list)
    return num_syms_reloc;
 }
 
+// Passed as a converter function to PyArg_ParseTuple
+int extract_bfd_capsule(PyObject *obj, void *dst)
+{
+   // Is this obj a PyCapsule?
+   if(PyCapsule_IsValid(obj, "pybfd.bfd"))
+   {
+      // Extract the bfd * from the capsule
+      *((bfd **) dst) = PyCapsule_GetPointer(obj, "pybfd.bfd");
+
+      // The conversion was successful
+      return 1;
+   }
+   else
+   {
+      PyErr_SetString(PyExc_TypeError, "Invalid parameter(s)");
+   }
+
+   // The conversion failed
+   return 0;
+}
+
 static PyObject *pybfd_get_relocs(PyObject *self, PyObject *args)
 {
    bfd *abfd;
    PyObject* py_symbol_list = NULL;
 
-   int symbols_count;
+   long symbols_count;
 
-   if (PyArg_ParseTuple(args, "n", &abfd))
+   if (PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       if (!abfd)
       {
@@ -158,17 +185,17 @@ static PyObject *pybfd_get_relocs(PyObject *self, PyObject *args)
    return NULL;
 }
 
-int get_static_symbols(bfd *abfd, PyObject **py_symbol_list)
+long get_static_symbols(bfd *abfd, PyObject **py_symbol_list)
 {
-   int x;
+   long x;
 
-   int storage_static;
+   long storage_static;
 
    asymbol *symbol;
    asymbol **symbol_table;
    asection *section;
 
-   int num_syms_static;
+   long num_syms_static;
 
    // Return value list
    if (!(*py_symbol_list = PyList_New(0)))
@@ -197,20 +224,24 @@ int get_static_symbols(bfd *abfd, PyObject **py_symbol_list)
       return -1;
    }
 
-   DEBUG("SYMBOLS %d\n", num_syms_static);
+   DEBUG("SYMBOLS %ld\n", num_syms_static);
 
    for(x = 0; x < num_syms_static; x++) 
    {
       symbol = symbol_table[x];
 
-      DEBUG("SYM. %d, %s @ 0x%x\n", x, symbol->name, symbol->value);
+      DEBUG("SYM. %ld, %s @ 0x%x\n", x, symbol->name, symbol->value);
 
       // Get section this symbol is in
       section = bfd_get_section(symbol);
 
       PyList_Append(*py_symbol_list,
          Py_BuildValue(
+#ifdef BFD64
+            "(IsKI)",
+#else
             "(IskI)",
+#endif
             symbol->section->index,
             symbol->name,
             section->vma + symbol->value,
@@ -231,9 +262,9 @@ static PyObject *pybfd_get_static_symbols(PyObject *self, PyObject *args)
    bfd *abfd;
    PyObject* py_symbol_list = NULL;
 
-   int symbols_count;
+   long symbols_count;
 
-   if(PyArg_ParseTuple(args, "n", &abfd))
+   if(PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       if(!abfd)
       {
@@ -261,17 +292,17 @@ static PyObject *pybfd_get_static_symbols(PyObject *self, PyObject *args)
    return NULL;
 }
 
-int get_dynamic_symbols(bfd *abfd, PyObject **py_symbol_list)
+long get_dynamic_symbols(bfd *abfd, PyObject **py_symbol_list)
 {
-   int x;
+   long x;
 
-   int storage_dynamic;
+   long storage_dynamic;
 
    asymbol *symbol;
    asymbol **symbol_table;
    asection *section;
 
-   int num_syms_dynamic;
+   long num_syms_dynamic;
 
    // Return value list
    if(!(*py_symbol_list = PyList_New(0)))
@@ -300,20 +331,24 @@ int get_dynamic_symbols(bfd *abfd, PyObject **py_symbol_list)
       return -1;
    }
 
-   DEBUG("SYMBOLS %d\n", num_syms_dynamic);
+   DEBUG("SYMBOLS %ld\n", num_syms_dynamic);
 
    for(x = 0; x < num_syms_dynamic; x++) 
    {
       symbol = symbol_table[x];
 
-      DEBUG("SYM. %d, %s @ 0x%x\n", x, symbol->name, symbol->value);
+      DEBUG("SYM. %ld, %s @ 0x%x\n", x, symbol->name, symbol->value);
 
       // Get section this symbol is in
       section = bfd_get_section(symbol);
 
       PyList_Append(*py_symbol_list,
          Py_BuildValue(
+#ifdef BFD64
+            "(IsKI)",
+#else
             "(IskI)",
+#endif
             symbol->section->index,
             symbol->name,
             section->vma + symbol->value,
@@ -334,9 +369,9 @@ static PyObject *pybfd_get_dynamic_symbols(PyObject *self, PyObject *args)
    bfd *abfd;
    PyObject* py_symbol_list = NULL;
 
-   int symbols_count;
+   long symbols_count;
 
-   if(PyArg_ParseTuple(args, "n", &abfd))
+   if(PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       if(!abfd)
       {
@@ -364,21 +399,21 @@ static PyObject *pybfd_get_dynamic_symbols(PyObject *self, PyObject *args)
    return NULL;
 }
 
-int get_synthetic_symbols(bfd *abfd, PyObject **py_symbol_list)
+long get_synthetic_symbols(bfd *abfd, PyObject **py_symbol_list)
 {
-   int x;
-   int synth_count;
+   long x;
+   long synth_count;
 
-   int storage_static;
-   int storage_dynamic;
+   long storage_static;
+   long storage_dynamic;
 
    asymbol *synthsyms;
    asymbol *symbol;
    asymbol **symbol_table;
    asection *section;
 
-   int num_syms_static;
-   int num_syms_dynamic;
+   long num_syms_static;
+   long num_syms_dynamic;
 
    // Return value list
    if(!(*py_symbol_list = PyList_New(0)))
@@ -414,20 +449,24 @@ int get_synthetic_symbols(bfd *abfd, PyObject **py_symbol_list)
    if(synth_count < 0)
       synth_count = 0;
 
-   DEBUG("SYNTHS %d\n", synth_count);
+   DEBUG("SYNTHS %ld\n", synth_count);
 
    for(x = 0; x < synth_count; x++) 
    {
       symbol = synthsyms + x;
 
-      DEBUG("SYM. %d, %s @ 0x%x\n", x, symbol->name, symbol->value);
+      DEBUG("SYM. %ld, %s @ 0x%x\n", x, symbol->name, symbol->value);
 
       // Get section this symbol is in
       section = bfd_get_section(symbol);
 
       PyList_Append(*py_symbol_list,
          Py_BuildValue(
+#ifdef BFD64
+            "(IsKI)",
+#else
             "(IskI)",
+#endif
             symbol->section->index,
             symbol->name,
             section->vma + symbol->value,
@@ -448,9 +487,9 @@ static PyObject *pybfd_get_synthetic_symbols(PyObject *self, PyObject *args)
    bfd *abfd;
    PyObject* py_symbol_list = NULL;
 
-   int symbols_count;
+   long symbols_count;
 
-   if (PyArg_ParseTuple(args, "n", &abfd))
+   if (PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       if (!abfd)
       {
@@ -478,6 +517,12 @@ static PyObject *pybfd_get_synthetic_symbols(PyObject *self, PyObject *args)
    return NULL;
 }
 
+// Passed as a converter function to Py_BuildValue
+PyObject *create_bfd_capsule(void *src)
+{
+   return PyCapsule_New(src, "pybfd.bfd", NULL);
+}
+
 static PyObject *pybfd_openr(PyObject *self, PyObject *args)
 {
    bfd* abfd;
@@ -502,7 +547,7 @@ static PyObject *pybfd_openr(PyObject *self, PyObject *args)
          return NULL;
       }
 
-      return Py_BuildValue("n", abfd);
+      return Py_BuildValue("O&", create_bfd_capsule, abfd);
    }
    else
    {
@@ -519,7 +564,7 @@ static PyObject *pybfd_close(PyObject *self, PyObject *args)
    //
    bfd* abfd;
 
-   if(PyArg_ParseTuple(args, "n", &abfd))
+   if(PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       // Validate the BFD pointer passes.
       if(!abfd)
@@ -544,6 +589,11 @@ static PyObject *pybfd_close(PyObject *self, PyObject *args)
    return NULL;
 }
 
+PyObject *create_section_capsule(void *src)
+{
+   return PyCapsule_New(src, "pybfd.section", NULL);
+}
+
 static PyObject *pybfd_get_sections(PyObject *self, PyObject *args)
 {
    bfd *abfd;
@@ -553,7 +603,7 @@ static PyObject *pybfd_get_sections(PyObject *self, PyObject *args)
    PyObject *list = NULL;
    bfd_byte *content;
 
-   if(PyArg_ParseTuple(args, "n", &abfd))
+   if(PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       // Validate the BFD pointer passes.
       if(!abfd)
@@ -582,11 +632,21 @@ static PyObject *pybfd_get_sections(PyObject *self, PyObject *args)
             }
 
             PyList_SetItem(list, section->index, 
-            #if PY_MAJOR_VERSION >= 3
-               Py_BuildValue("(nisiiiiiiy#)", 
-            #else
-               Py_BuildValue("(nisiiiiiis#)", 
-            #endif
+               Py_BuildValue(
+#if PY_MAJOR_VERSION >= 3
+#ifdef BFD64
+                  "(O&IsKKKiily#)",
+#else
+                  "(O&Iskkkiily#)",
+#endif
+#else
+#ifdef BFD64
+                  "(O&IsKKKiils#)",
+#else
+                  "(O&Iskkkiils#)",
+#endif
+#endif
+                  create_section_capsule,
                   section, 
                   section->index, 
                   section->name, 
@@ -623,7 +683,7 @@ static PyObject *pybfd_get_architecture(PyObject *self, PyObject *args)
    int flavour;
    const bfd_arch_info_type *info;
 
-   if(PyArg_ParseTuple(args, "n", &abfd))
+   if(PyArg_ParseTuple(args, "O&", extract_bfd_capsule, &abfd))
    {
       // Validate the BFD pointer passes.
       if(!abfd)
@@ -662,7 +722,7 @@ static PyObject *pybfd_get_architecture(PyObject *self, PyObject *args)
    return NULL;
 }
 
-int disassemble_sprintf(SFILE *f, const char *format, ...)
+size_t disassemble_sprintf(SFILE *f, const char *format, ...)
 {
     size_t n;
     va_list args;
@@ -699,14 +759,15 @@ int disassemble_sprintf(SFILE *f, const char *format, ...)
     return n;
 }
 
-int disassemble_bytes(bfd *abfd, PyObject **py_instr_list, int arch_num, char *data, size_t len, size_t vma)
+int disassemble_bytes(bfd *abfd, PyObject **py_instr_list, int arch_num, char *data,
+                      size_t len, unsigned long long vma)
 {
    #define DEFAULT_SKIP_ZEROES 8
    #define DEFAULT_SKIP_ZEROES_AT_END 3
 
    int x = 0;
    int bytes;
-   size_t current_addr;
+   unsigned long long current_addr;
    struct disassemble_info disasm_info;
    struct bfd_target *xvec;
    const bfd_arch_info_type *inf;
@@ -771,7 +832,7 @@ int disassemble_bytes(bfd *abfd, PyObject **py_instr_list, int arch_num, char *d
 
    disasm_info.display_endian = disasm_info.endian = archs[arch_num].endianess;
 
-    disassemble_init_for_target(&disasm_info);
+   disassemble_init_for_target(&disasm_info);
 
    current_addr = vma;
 
@@ -782,7 +843,8 @@ int disassemble_bytes(bfd *abfd, PyObject **py_instr_list, int arch_num, char *d
       bytes = disassemble_fn((bfd_vma)current_addr, &disasm_info);
 
       PyList_Append(*py_instr_list,
-         Py_BuildValue("(iis#)",
+         Py_BuildValue(
+            "(Kis#)",
             current_addr,
             bytes,
             sfile.buffer,
@@ -810,10 +872,10 @@ static PyObject *pybfd_disassemble_bytes(PyObject *self, PyObject *args)
    PyObject *py_instr_list = NULL;
    char *data;
    int arch_num;
-   int data_len;
-   size_t vma;
+   size_t data_len;
+   unsigned long long vma;
 
-   if(PyArg_ParseTuple(args, "nis#n", &abfd, &arch_num, &data, &data_len, &vma))
+   if(PyArg_ParseTuple(args, "O&is#K", extract_bfd_capsule, &abfd, &arch_num, &data, &data_len, &vma))
    {
       // Validate the BFD pointer passes.
       if(!abfd)
